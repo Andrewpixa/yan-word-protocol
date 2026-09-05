@@ -19,6 +19,7 @@ import {
   KIND_LABEL,
   VERIFY_LABEL,
   normalizeEvidenceDraft,
+  rememberEvidenceTx,
   resolveEvidenceHash,
   shortHash,
   displayName,
@@ -26,6 +27,7 @@ import {
   formatError,
   formatEpochLen,
   formatYan,
+  getExplorerUrl,
   getRpcProvider,
   fundSessionOnLocal,
   loadOrCreateSessionWallet,
@@ -452,21 +454,43 @@ export default function App() {
         const actor = displayName(await signer.getAddress())
         const protocol = protocolContract(signer)
         let tx
+        if (vow.verifyMode === 1 && vow.kind === 1) {
+          const hash = resolveEvidenceHash(note)
+          if (hash === ethers.ZeroHash) throw new Error('请先上传证据图片或填写说明')
+          tx = await protocol.submitEvidence(vow.id, hash)
+          const receipt = await tx.wait()
+          rememberEvidenceTx(hash, receipt.hash)
+          pushActivity('提交证据', receipt.hash, shortHash(hash), actor, vow.id)
+          return
+        }
         if (vow.verifyMode === 1) {
           const hash = resolveEvidenceHash(note)
           if (hash === ethers.ZeroHash) throw new Error('请先上传证据图片或填写说明')
+          const chainEpoch = Number(await protocol.currentEpoch())
+          const last = Number(vow.lastCheckEpoch)
+          if (chainEpoch === last) {
+            throw new Error('今天已经签到并上传过证据，明天再传。已上传的记录在卡片里，点链接可打开。')
+          }
+          if (chainEpoch !== last + 1) {
+            throw new Error(
+              '已过当天签到窗口（Wrong day）。每日证据必须在当天内上传一次。请改用「到期验收 · 需要证据」的言约，或等下一天。',
+            )
+          }
           tx = await protocol.checkInWithProof(vow.id, hash)
-        } else {
-          tx = await protocol.checkIn(vow.id)
+          const receipt = await tx.wait()
+          rememberEvidenceTx(hash, receipt.hash)
+          pushActivity('签到并上链证据', receipt.hash, shortHash(hash), actor, vow.id)
+          return
         }
+        const chainEpoch = Number(await protocol.currentEpoch())
+        const last = Number(vow.lastCheckEpoch)
+        if (chainEpoch === last) throw new Error('今天已经签到，明天再来。')
+        if (chainEpoch !== last + 1) {
+          throw new Error('已过当天签到窗口，这条不能再签。')
+        }
+        tx = await protocol.checkIn(vow.id)
         const receipt = await tx.wait()
-        pushActivity(
-          vow.verifyMode === 1 ? '签到并上链证据' : '今日签到',
-          receipt.hash,
-          `言约 #${vow.id}`,
-          actor,
-          vow.id,
-        )
+        pushActivity('今日签到', receipt.hash, `言约 #${vow.id}`, actor, vow.id)
       },
       { vowId: vow.id, action: 'checkIn' },
     )
@@ -513,6 +537,7 @@ export default function App() {
         const actor = displayName(await signer.getAddress())
         const tx = await protocolContract(signer).submitEvidence(vow.id, hash)
         const receipt = await tx.wait()
+        rememberEvidenceTx(hash, receipt.hash)
         pushActivity('提交证据', receipt.hash, shortHash(hash), actor, vow.id)
       },
       { vowId: vow.id, action: 'submitEvidence' },
@@ -1149,7 +1174,20 @@ export default function App() {
           <p style={styles.hint}>
             链上共 {sortedVows.length} 条言约，其中 <b>{pendingVows.length}</b> 条待担保。
             想开工就点 <b>我信他</b>；已开工的可直接 <b>赌你做不到</b>，投过仍可继续加注。
-            <span style={styles.hintMute}> · {shortAddr(protocolAddress)}</span>
+            {protocolAddress ? (
+              <>
+                {' '}
+                <a
+                  href={`${getExplorerUrl() || 'https://testnet.monadexplorer.com'}/address/${protocolAddress}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={styles.protocolLink}
+                  title="打开当前 WordProtocol"
+                >
+                  当前协议 {protocolAddress}
+                </a>
+              </>
+            ) : null}
           </p>
 
           {!connected && (
@@ -1889,6 +1927,13 @@ const styles = {
   h2: { fontFamily: '"Cormorant Garamond", serif', fontSize: 28, letterSpacing: 3, color: '#d4af37' },
   hint: { color: '#9a9488', fontSize: 13, margin: '8px 0 14px', lineHeight: 1.6 },
   hintMute: { color: '#6e685c' },
+  protocolLink: {
+    color: '#e8d48b',
+    fontSize: 12,
+    wordBreak: 'break-all',
+    textDecoration: 'underline',
+    textUnderlineOffset: 2,
+  },
   connectBanner: {
     marginBottom: 14,
     padding: '12px 14px',

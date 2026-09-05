@@ -113,7 +113,6 @@ async function main() {
         demoMode,
         epochSeconds: EPOCH,
         network: hre.network.name,
-        previousProtocol: prev.protocol,
       },
       null,
       2

@@ -54,6 +54,17 @@ export default function WalletBar({
           <div style={styles.sub}>链上履约协议</div>
         </div>
       </button>
+      {activeNet.protocol ? (
+        <a
+          href={`${activeNet.explorer || 'https://testnet.monadexplorer.com'}/address/${activeNet.protocol}`}
+          target="_blank"
+          rel="noreferrer"
+          style={styles.protocolLink}
+          title={activeNet.protocol}
+        >
+          {activeNet.protocol}
+        </a>
+      ) : null}
 
       <div style={styles.cluster}>
         <select
@@ -222,6 +233,16 @@ const styles = {
     lineHeight: 1.1,
   },
   sub: { color: '#8a8376', fontSize: 11, letterSpacing: 1 },
+  protocolLink: {
+    color: '#e8d48b',
+    fontSize: 11,
+    maxWidth: 220,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    textDecoration: 'underline',
+    textUnderlineOffset: 2,
+  },
   cluster: {
     display: 'flex',
     alignItems: 'center',

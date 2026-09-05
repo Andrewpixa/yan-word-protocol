@@ -4,6 +4,5 @@
   "chainId": 10143,
   "demoMode": true,
   "epochSeconds": 86400,
-  "network": "monad_testnet",
-  "previousProtocol": "0xB5893C58C2c7DdD554526878b7621Ca1a8035F98"
+  "network": "monad_testnet"
 }
