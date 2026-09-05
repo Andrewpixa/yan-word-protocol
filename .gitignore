@@ -1,0 +1,36 @@
+# IDE and OS files
+.DS_Store
+.vscode/
+.idea/
+.cursor/
+*.swp
+
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+artifacts/
+cache/
+typechain/
+typechain-types/
+coverage/
+coverage.json
+edr-cache/
+
+# Env
+.env
+.env.local
+*.env
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local chain
+.anvil/
+
+# Mojo agent secret (never commit)
+.mojo_agent_secret
+.env.production

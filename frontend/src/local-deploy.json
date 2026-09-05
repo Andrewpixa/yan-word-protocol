@@ -1,0 +1,6 @@
+{
+  "yan": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "protocol": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+  "chainId": 31337,
+  "note": "Hardhat 默认首两次部署地址；本地重新部署后由 deploy.js 覆盖"
+}
