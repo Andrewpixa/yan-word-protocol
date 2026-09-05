@@ -17,6 +17,8 @@ export default function MyVowsPanel({
   vows,
   me,
   epoch,
+  epochLen,
+  activities,
   connected,
   busy,
   pending,
@@ -63,6 +65,8 @@ export default function MyVowsPanel({
               vow={vow}
               me={me}
               epoch={epoch}
+              epochLen={epochLen}
+              activities={activities}
               connected={connected}
               open={expandedId === vow.id}
               busy={busy}
@@ -92,6 +96,8 @@ function VowRow({
   vow,
   me,
   epoch,
+  epochLen,
+  activities,
   connected,
   open,
   busy,
@@ -162,6 +168,8 @@ function VowRow({
             vow={vow}
             me={connected ? me : ''}
             epoch={epoch}
+            epochLen={epochLen}
+            activities={activities}
             busy={busy}
             confirmingAction={confirmingAction}
             evidenceDraft={draft}

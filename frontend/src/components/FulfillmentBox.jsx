@@ -15,6 +15,8 @@ export default function FulfillmentBox({
   vow,
   me,
   epoch = 0,
+  epochLen = 86400,
+  activities = [],
   busy,
   confirmingAction,
   evidenceDraft,
@@ -65,6 +67,7 @@ export default function FulfillmentBox({
           还给 {displayName(vow.payee)} · 已付 {paid}/{need} YAN
         </div>
         {statusLine({ pending, active, closed, isMaker, maker: vow.maker, verb: '还款' })}
+        <RecordList vow={vow} activities={activities} />
         {canPay && (
           <button
             type="button"
@@ -92,6 +95,8 @@ export default function FulfillmentBox({
           maker: vow.maker,
           verb: '上传证据',
         })}
+        {isDaily ? <DayTrack daysChecked={vow.daysChecked} daysRequired={vow.daysRequired} /> : null}
+        <RecordList vow={vow} activities={activities} />
         <EvidenceUploadBox
           compact={compact}
           draft={evidenceDraft}
@@ -118,10 +123,14 @@ export default function FulfillmentBox({
   if (pending) stateText = isMaker ? '等待别人担保后，即可在此签到。' : '担保开工后，立约人可在此签到。'
   else if (closed) stateText = '本条已结束。'
   else if (!isMaker) stateText = `仅立约人 ${displayName(vow.maker)} 可签到。切换该钱包后操作。`
-  else if (alreadyChecked) stateText = '今日已签到，下一轮再来。'
+  else if (alreadyChecked) stateText = '今日已签到，明天再来。'
   else if (alreadyDone) stateText = '已确认完成。'
-  else if (missed) stateText = '已错过签到窗口，可能被食言结算。'
-  else stateText = isDeadline ? '截止前点一次即可验收。' : '今天还没签到。'
+  else if (missed)
+    stateText = '已错过当天签到窗口，这条不能再签，可能被食言结算。'
+  else
+    stateText = isDeadline
+      ? '截止前点一次即可验收。'
+      : '今天还没签到。当天结束前点「今日签到」即可。'
 
   return (
     <section className="yan-fulfill" style={{ ...styles.box, ...(compact ? styles.compact : {}) }}>
@@ -130,6 +139,8 @@ export default function FulfillmentBox({
         <span style={styles.badge}>上链打卡</span>
       </div>
       <div style={styles.meta}>{progress}</div>
+      <DayTrack daysChecked={vow.daysChecked} daysRequired={vow.daysRequired} />
+      <RecordList vow={vow} activities={activities} />
       <p style={styles.help}>{stateText}</p>
       {canPunch && (
         <button
@@ -147,6 +158,55 @@ export default function FulfillmentBox({
       )}
       <div style={styles.gas}>钱包确认后消耗少量 MON Gas，不扣 YAN。</div>
     </section>
+  )
+}
+
+function matchesVow(item, vowId) {
+  if (item?.vowId === vowId) return true
+  return String(item?.detail || '').includes(`#${vowId}`)
+}
+
+function DayTrack({ daysChecked, daysRequired }) {
+  const need = Math.max(0, Number(daysRequired) || 0)
+  const done = Math.min(need, Number(daysChecked) || 0)
+  if (need <= 0) return null
+  return (
+    <div style={styles.track} aria-label={`已签 ${done}/${need}`}>
+      {Array.from({ length: need }, (_, i) => (
+        <span
+          key={i}
+          style={{
+            ...styles.dot,
+            ...(i < done ? styles.dotOn : styles.dotOff),
+          }}
+          title={i < done ? `第 ${i + 1} 天已签` : `第 ${i + 1} 天未签`}
+        />
+      ))}
+      <span style={styles.trackLabel}>已签 {done}/{need}</span>
+    </div>
+  )
+}
+
+function RecordList({ vow, activities }) {
+  const rows = (activities || []).filter((item) =>
+    matchesVow(item, vow.id) && /签到|打卡|证据|还款/.test(item.label || ''),
+  )
+  if (rows.length === 0 && Number(vow.daysChecked) === 0 && !(vow.evidences || []).length) {
+    return <div style={styles.recordEmpty}>还没有履约记录。签到或上传证据后会出现在这里，右侧「近日链上动作」也能看到。</div>
+  }
+  return (
+    <ul style={styles.recordList}>
+      {Number(vow.daysChecked) > 0 && rows.length === 0 ? (
+        <li style={styles.recordItem}>链上已记 {vow.daysChecked} 次签到</li>
+      ) : null}
+      {rows.map((item) => (
+        <li key={item.id || item.hash} style={styles.recordItem}>
+          <span style={styles.recordLabel}>{item.label}</span>
+          {item.time ? <span style={styles.recordTime}>{item.time}</span> : null}
+          {item.detail ? <span style={styles.recordDetail}>{item.detail}</span> : null}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -229,4 +289,50 @@ const styles = {
     color: '#6ee7b7',
     border: '1px solid rgba(110, 231, 183, 0.28)',
   },
+  track: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+    margin: '4px 0 8px',
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 999,
+    display: 'inline-block',
+  },
+  dotOn: {
+    background: '#e8d48b',
+    boxShadow: '0 0 0 1px rgba(232, 212, 139, 0.35)',
+  },
+  dotOff: {
+    background: 'transparent',
+    border: '1px solid rgba(244, 239, 228, 0.28)',
+  },
+  trackLabel: { color: '#c8c2b4', fontSize: 11 },
+  recordEmpty: {
+    margin: '0 0 8px',
+    color: '#8a8376',
+    fontSize: 11,
+    lineHeight: 1.5,
+  },
+  recordList: {
+    margin: '0 0 8px',
+    padding: 0,
+    listStyle: 'none',
+  },
+  recordItem: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: 6,
+    color: '#c8c2b4',
+    fontSize: 11,
+    lineHeight: 1.5,
+    padding: '3px 0',
+    borderBottom: '1px solid rgba(244,239,228,0.06)',
+  },
+  recordLabel: { color: '#e8d48b', fontWeight: 600 },
+  recordTime: { color: '#8a8376' },
+  recordDetail: { color: '#9a9488' },
 }

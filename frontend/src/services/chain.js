@@ -28,7 +28,7 @@ export const NETWORKS = {
     explorer: 'https://testnet.monadexplorer.com',
     currency: 'MON',
     demoMode: true,
-    epochSeconds: parseInt(import.meta.env.VITE_EPOCH_SECONDS || '60', 10),
+    epochSeconds: parseInt(import.meta.env.VITE_EPOCH_SECONDS || '86400', 10),
   },
   local: {
     id: 'local',
@@ -46,7 +46,7 @@ export const NETWORKS = {
     explorer: '',
     currency: 'ETH',
     demoMode: true,
-    epochSeconds: parseInt(import.meta.env.VITE_LOCAL_EPOCH_SECONDS || '60', 10),
+    epochSeconds: parseInt(import.meta.env.VITE_LOCAL_EPOCH_SECONDS || '86400', 10),
   },
 }
 
@@ -467,6 +467,9 @@ const PROTOCOL_ABI = [
   'event VowCreated(uint256 indexed id, address indexed maker, uint256 stake, uint256 daysRequired, string statement)',
   'event Guaranteed(uint256 indexed id, address indexed guarantor, uint256 stake)',
   'event Faded(uint256 indexed id, address indexed better, uint256 amount)',
+  'event CheckedIn(uint256 indexed id, address indexed by, uint256 daysChecked, uint256 epoch)',
+  'event EvidenceSubmitted(uint256 indexed id, bytes32 hash, uint256 count)',
+  'event PaymentFulfilled(uint256 indexed id, address indexed payee, uint256 amount)',
   'event VowKept(uint256 indexed id, uint256 bonus)',
   'event VowBroken(uint256 indexed id, uint256 prize)',
 ]
@@ -512,6 +515,15 @@ export function shortAddr(addr) {
 export function formatYan(value) {
   const n = Number(ethers.formatEther(value || 0n))
   return n.toLocaleString('zh-CN', { maximumFractionDigits: 2 })
+}
+
+/** 一轮时长：86400 →「1 天」，3600 →「1 小时」 */
+export function formatEpochLen(sec) {
+  const n = Number(sec) || 0
+  if (n >= 86400 && n % 86400 === 0) return n === 86400 ? '1 天' : `${n / 86400} 天`
+  if (n >= 3600 && n % 3600 === 0) return `${n / 3600} 小时`
+  if (n >= 60 && n % 60 === 0) return `${n / 60} 分钟`
+  return `${n} 秒`
 }
 
 export function txUrl(hash) {
@@ -563,7 +575,16 @@ export async function ensureAllowance(signer, amount) {
   return receipt
 }
 
-const CHAIN_ACTIVITY_EVENTS = ['VowCreated', 'Guaranteed', 'Faded', 'VowKept', 'VowBroken']
+const CHAIN_ACTIVITY_EVENTS = [
+  'VowCreated',
+  'Guaranteed',
+  'Faded',
+  'CheckedIn',
+  'EvidenceSubmitted',
+  'PaymentFulfilled',
+  'VowKept',
+  'VowBroken',
+]
 
 function formatLogTime(timestamp) {
   if (!timestamp) return ''
@@ -585,6 +606,7 @@ function activityFromLog(log, timestamp) {
     const statement = log.args.statement ? `「${log.args.statement}」 · ` : ''
     return {
       id: hash,
+      vowId: id,
       label: '发起言约',
       hash,
       detail: `言约 #${id} · ${statement}${formatYan(log.args.stake)} YAN`,
@@ -596,6 +618,7 @@ function activityFromLog(log, timestamp) {
   if (name === 'Guaranteed') {
     return {
       id: hash,
+      vowId: id,
       label: '我信他',
       hash,
       detail: `言约 #${id} · ${formatYan(log.args.stake)} YAN`,
@@ -607,6 +630,7 @@ function activityFromLog(log, timestamp) {
   if (name === 'Faded') {
     return {
       id: hash,
+      vowId: id,
       label: '赌你做不到',
       hash,
       detail: `言约 #${id} · ${formatYan(log.args.amount)} YAN`,
@@ -615,9 +639,46 @@ function activityFromLog(log, timestamp) {
       fromChain: true,
     }
   }
+  if (name === 'CheckedIn') {
+    return {
+      id: hash,
+      vowId: id,
+      label: '今日签到',
+      hash,
+      detail: `言约 #${id} · 第 ${Number(log.args.daysChecked)} 天 · 轮次 ${Number(log.args.epoch)}`,
+      actor: displayName(log.args.by),
+      time,
+      fromChain: true,
+    }
+  }
+  if (name === 'EvidenceSubmitted') {
+    return {
+      id: hash,
+      vowId: id,
+      label: '提交证据',
+      hash,
+      detail: `言约 #${id} · 第 ${Number(log.args.count)} 份`,
+      actor: '',
+      time,
+      fromChain: true,
+    }
+  }
+  if (name === 'PaymentFulfilled') {
+    return {
+      id: hash,
+      vowId: id,
+      label: '链上还款',
+      hash,
+      detail: `言约 #${id} · ${formatYan(log.args.amount)} YAN`,
+      actor: displayName(log.args.payee),
+      time,
+      fromChain: true,
+    }
+  }
   if (name === 'VowKept') {
     return {
       id: hash,
+      vowId: id,
       label: '守诺结算',
       hash,
       detail: `言约 #${id}`,
@@ -629,6 +690,7 @@ function activityFromLog(log, timestamp) {
   if (name === 'VowBroken') {
     return {
       id: hash,
+      vowId: id,
       label: '食言结算',
       hash,
       detail: `言约 #${id}`,

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>言 · Monad Blitz</title>
+  <style>
+    :root {
+      --bg: #07070a;
+      --ink: #f4efe4;
+      --muted: #8a8376;
+      --gold: #d4af37;
+      --red: #ff4d4d;
+      --line: #2a261c;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Songti SC", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+    }
+    .deck { height: 100%; position: relative; overflow: hidden; }
+    .slide {
+      display: none;
+      height: 100%;
+      padding: 7vh 8vw 10vh;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .slide.on { display: flex; }
+    .kicker {
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: clamp(12px, 1.4vw, 16px);
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 3vh;
+    }
+    h1 {
+      font-weight: 500;
+      font-size: clamp(36px, 6.4vw, 84px);
+      line-height: 1.18;
+      letter-spacing: 0.04em;
+      max-width: 16ch;
+    }
+    .sub {
+      margin-top: 3vh;
+      font-size: clamp(16px, 2vw, 26px);
+      color: var(--muted);
+      max-width: 28ch;
+      line-height: 1.5;
+    }
+    .seal {
+      width: 88px;
+      height: 88px;
+      border: 1px solid var(--gold);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-size: 40px;
+      letter-spacing: 0.2em;
+      margin-bottom: 4vh;
+    }
+    .grid4 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.4vh 3vw;
+      margin-top: 5vh;
+      max-width: 920px;
+    }
+    .cell {
+      border-top: 1px solid var(--line);
+      padding-top: 1.6vh;
+    }
+    .cell b {
+      display: block;
+      font-size: clamp(22px, 2.6vw, 34px);
+      font-weight: 500;
+      margin-bottom: 0.6vh;
+    }
+    .cell span { color: var(--muted); font-size: clamp(14px, 1.5vw, 18px); }
+    .addrs {
+      margin-top: 5vh;
+      font-family: "SF Mono", Menlo, Consolas, monospace;
+      font-size: clamp(13px, 1.5vw, 18px);
+      line-height: 1.9;
+      color: var(--muted);
+    }
+    .addrs strong { color: var(--ink); font-weight: 500; }
+    .foot {
+      position: fixed;
+      left: 8vw;
+      right: 8vw;
+      bottom: 3vh;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+    }
+    .notes {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #111118;
+      border-top: 1px solid var(--line);
+      padding: 16px 8vw 56px;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 1.55;
+      color: #cfc6b8;
+    }
+    body.notes-on .notes { display: block; }
+    body.notes-on .slide { padding-bottom: 22vh; }
+    a { color: var(--gold); text-decoration: none; }
+    .hint { opacity: 0.7; }
+    .red { color: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="deck" id="deck">
+    <section class="slide on" data-notes="看人 1 秒。念完 one-liner，立刻切到应用。不要在这页停超过 12 秒。">
+      <div class="seal">言</div>
+      <p class="kicker">Yan · Monad Testnet</p>
+      <h1>没有人担保，合约不开工。</h1>
+      <p class="sub">网上发誓很容易。爽约也没代价。</p>
+    </section>
+
+    <section class="slide" data-notes="一般不投影。若主持人要幻灯片：停 2 秒，让人自己接，然后切应用。">
+      <p class="kicker">问题</p>
+      <h1>发誓很容易。<br>食言也没代价。</h1>
+    </section>
+
+    <section class="slide" data-notes="四格用嘴指应用，不要在 PPT 上讲太久。没有担保边，看衰盘不存在。">
+      <p class="kicker">做法</p>
+      <h1>信用边先上链，再谈输赢。</h1>
+      <div class="grid4">
+        <div class="cell"><b>立约</b><span>写清承诺，押上 YAN</span></div>
+        <div class="cell"><b>担保</b><span>没有人押「我信你」，不开工</span></div>
+        <div class="cell"><b>看衰</b><span>旁人可以押「你做不到」</span></div>
+        <div class="cell"><b>结算</b><span>窗口过了，钱按规则走</span></div>
+      </div>
+    </section>
+
+    <section class="slide" data-notes="不要停在这页。立刻切应用红边，再点 missSettle 进 Explorer。这是全场高潮。">
+      <p class="kicker">结果</p>
+      <h1 class="red">边断了，钱分了。</h1>
+      <p class="sub">切到应用。点结算哈希。停三秒。</p>
+    </section>
+
+    <section class="slide" data-notes="Why Monad 只留这一句。最多点 1 次日签打卡。不要说 TPS、独立槽、并行、确认密度。">
+      <p class="kicker">Why Monad</p>
+      <h1>日签钥匙少弹窗，便宜确认让天天打卡成立。</h1>
+      <p class="sub">确认要慢、每签一次都弹钱包，这个玩法先死。</p>
+    </section>
+
+    <section class="slide" data-notes="有人问怎么建的再切。三种验收一行带过，台上只演每日报到 + 超时结算。">
+      <p class="kicker">构建</p>
+      <h1>YanToken + WordProtocol</h1>
+      <p class="sub">每日报到 · 证据裁判 · 链上还款。今天只演第一条。</p>
+      <div class="addrs">
+        <div><strong>YAN</strong>&nbsp; 0xCAd6…9E80</div>
+        <div><strong>协议</strong>&nbsp; 0x1528…64b7</div>
+        <div><a href="https://testnet.monadexplorer.com/address/0x15282187E58cfdf3a936f5EE279Bd688E9Ee64b7" target="_blank" rel="noreferrer">testnet.monadexplorer.com</a></div>
+      </div>
+    </section>
+
+    <section class="slide" data-notes="收尾停在这里。欢迎拆。不要谢谢之后继续讲。">
+      <div class="seal">言</div>
+      <p class="kicker">Monad Testnet · 欢迎拆</p>
+      <h1>拆合约、拆图谱、拆这笔结算。</h1>
+      <p class="sub">没有担保人，合约不开工。</p>
+      <div class="addrs">
+        <div><a href="https://testnet.monadexplorer.com/address/0xCAd6963B2667E01891775fF6EB6cFd716FD39E80" target="_blank" rel="noreferrer">YanToken</a></div>
+        <div><a href="https://testnet.monadexplorer.com/address/0x15282187E58cfdf3a936f5EE279Bd688E9Ee64b7" target="_blank" rel="noreferrer">WordProtocol</a></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="notes" id="notes"></div>
+  <div class="foot">
+    <span>言 · Blitz</span>
+    <span class="hint">← → 翻页 · F 全屏 · N 备注 · 1–7 跳页</span>
+    <span id="count">1 / 7</span>
+  </div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const notesEl = document.getElementById("notes");
+    const countEl = document.getElementById("count");
+    let i = 0;
+
+    function show(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle("on", idx === i));
+      notesEl.textContent = slides[i].dataset.notes || "";
+      countEl.textContent = i + 1 + " / " + slides.length;
+    }
+
+    function next() { show(i + 1); }
+    function prev() { show(i - 1); }
+
+    document.addEventListener("keydown", (e) => {
+      if (["ArrowRight", "ArrowDown", " ", "Enter", "PageDown"].includes(e.key)) {
+        e.preventDefault();
+        next();
+      } else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(e.key)) {
+        e.preventDefault();
+        prev();
+      } else if (e.key === "Home") {
+        show(0);
+      } else if (e.key === "End") {
+        show(slides.length - 1);
+      } else if (e.key === "n" || e.key === "N") {
+        document.body.classList.toggle("notes-on");
+      } else if (e.key === "f" || e.key === "F") {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+      } else if (/^[1-7]$/.test(e.key)) {
+        show(Number(e.key) - 1);
+      }
+    });
+
+    document.getElementById("deck").addEventListener("click", (e) => {
+      if (e.target.closest("a")) return;
+      next();
+    });
+
+    show(0);
+  </script>
+</body>
+</html>

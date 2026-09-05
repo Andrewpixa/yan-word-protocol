@@ -1,8 +1,9 @@
 {
   "yan": "0xCAd6963B2667E01891775fF6EB6cFd716FD39E80",
-  "protocol": "0xB5893C58C2c7DdD554526878b7621Ca1a8035F98",
+  "protocol": "0x15282187E58cfdf3a936f5EE279Bd688E9Ee64b7",
   "chainId": 10143,
   "demoMode": true,
-  "epochSeconds": 60,
-  "network": "monad_testnet"
+  "epochSeconds": 86400,
+  "network": "monad_testnet",
+  "previousProtocol": "0xB5893C58C2c7DdD554526878b7621Ca1a8035F98"
 }

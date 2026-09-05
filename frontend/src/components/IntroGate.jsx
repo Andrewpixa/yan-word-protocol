@@ -78,7 +78,7 @@ export default function IntroGate({ onEnter }) {
       </button>
 
       <p style={styles.monad}>
-        为什么是 Monad：履约要轻到能天天发生——确认一慢，日签经济就空转。
+        为什么是 Monad：日签钥匙少弹窗，便宜确认让天天打卡成立。
       </p>
     </div>
   )

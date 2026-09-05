@@ -200,4 +200,191 @@ describe("WordProtocol", function () {
       protocol.connect(maker).createVow(2, ethers.parseEther("50"), "a".repeat(121))
     ).to.be.revertedWith("Bad statement");
   });
+
+  async function fund(yan, protocol, who, amount = ethers.parseEther("2000")) {
+    await yan.transfer(who.address, amount);
+    await yan.connect(who).approve(await protocol.getAddress(), ethers.MaxUint256);
+  }
+
+  it("cannot cancel after a guarantor has started the vow", async function () {
+    const { protocol, maker, guarantor } = await deploy();
+    await protocol.connect(maker).createVow(2, ethers.parseEther("50"), ST);
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await expect(protocol.connect(maker).cancelVow(0)).to.be.revertedWith("Not pending");
+  });
+
+  it("referee cannot fade the same vow", async function () {
+    const { protocol, maker, guarantor, bank } = await deploy();
+    const referee = bank;
+    await protocol.connect(maker).createVowEx(
+      2,
+      ethers.parseEther("50"),
+      1,
+      1,
+      referee.address,
+      ethers.ZeroAddress,
+      0,
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await expect(protocol.connect(referee).fade(0, ethers.parseEther("20"))).to.be.revertedWith(
+      "Referee cannot fade"
+    );
+  });
+
+  it("breaks a daily vow after a skipped middle day", async function () {
+    const { protocol, maker, guarantor } = await deploy();
+    await protocol.connect(maker).createVow(3, ethers.parseEther("50"), ST);
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(maker).checkIn(0);
+    await protocol.demoWarpRounds(2);
+    await protocol.missSettle(0);
+    expect((await protocol.getVow(0)).status).to.equal(4);
+  });
+
+  it("rejects the 17th fade", async function () {
+    const signers = await ethers.getSigners();
+    const { yan, protocol, maker, guarantor } = await deploy();
+    await protocol.connect(maker).createVow(3, ethers.parseEther("50"), ST);
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+
+    const faders = signers.slice(3, 19);
+    expect(faders.length).to.equal(16);
+    for (const who of faders) {
+      if ((await yan.balanceOf(who.address)) < ethers.parseEther("1")) {
+        await fund(yan, protocol, who);
+      } else {
+        await yan.connect(who).approve(await protocol.getAddress(), ethers.MaxUint256);
+      }
+      await protocol.connect(who).fade(0, ethers.parseEther("1"));
+    }
+
+    const extra = signers[19];
+    await fund(yan, protocol, extra);
+    await expect(protocol.connect(extra).fade(0, ethers.parseEther("1"))).to.be.revertedWith("Fade full");
+  });
+
+  it("sends integer-division dust to the last unpaid fader", async function () {
+    const signers = await ethers.getSigners();
+    const { yan, protocol, maker, guarantor } = await deploy();
+    const [a, b, c] = [signers[5], signers[6], signers[7]];
+    for (const who of [a, b, c]) {
+      await fund(yan, protocol, who);
+    }
+
+    await protocol.connect(maker).createVow(2, ethers.parseEther("50"), ST);
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(a).fade(0, ethers.parseEther("10"));
+    await protocol.connect(b).fade(0, ethers.parseEther("10"));
+    await protocol.connect(c).fade(0, ethers.parseEther("10"));
+
+    const before = await Promise.all([a, b, c].map((who) => yan.balanceOf(who.address)));
+    await protocol.demoWarpRounds(2);
+    await protocol.missSettle(0);
+
+    const after = await Promise.all([a, b, c].map((who) => yan.balanceOf(who.address)));
+    const gains = after.map((bal, i) => bal - before[i]);
+    expect(gains[0] + gains[1] + gains[2]).to.equal(ethers.parseEther("130"));
+    expect(gains[2]).to.equal(gains[0] + 1n);
+  });
+
+  it("known hole: no-referee claimKept can take the fade pool immediately", async function () {
+    const { yan, protocol, maker, guarantor, fader } = await deploy();
+    await protocol.connect(maker).createVowEx(
+      2,
+      ethers.parseEther("50"),
+      1,
+      1,
+      ethers.ZeroAddress,
+      ethers.ZeroAddress,
+      0,
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(fader).fade(0, ethers.parseEther("20"));
+
+    const faderBefore = await yan.balanceOf(fader.address);
+    const makerBefore = await yan.balanceOf(maker.address);
+    await protocol.connect(maker).submitEvidence(0, ethers.id("any fake hash"));
+    await protocol.connect(maker).claimKept(0);
+
+    expect((await protocol.getVow(0)).status).to.equal(3);
+    expect(await yan.balanceOf(fader.address)).to.equal(faderBefore);
+    expect(await yan.balanceOf(maker.address)).to.be.gt(makerBefore);
+  });
+
+  it("known hole: missSettle reverts Wait referee after evidence is filed", async function () {
+    const { protocol, maker, guarantor, bank } = await deploy();
+    await protocol.connect(maker).createVowEx(
+      1,
+      ethers.parseEther("50"),
+      1,
+      1,
+      bank.address,
+      ethers.ZeroAddress,
+      0,
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(maker).submitEvidence(0, ethers.id("photo"));
+    await protocol.demoWarpRounds(2);
+    await expect(protocol.missSettle(0)).to.be.revertedWith("Wait referee");
+    expect((await protocol.getVow(0)).status).to.equal(2);
+  });
+
+  it("known hole: session key can claimKept and fulfillPay", async function () {
+    const signers = await ethers.getSigners();
+    const { yan, protocol, maker, guarantor, bank } = await deploy();
+    const session = signers[8];
+    await fund(yan, protocol, session);
+
+    await protocol.connect(maker).setSessionKey(session.address);
+    await protocol.connect(maker).createVowEx(
+      2,
+      ethers.parseEther("50"),
+      1,
+      1,
+      ethers.ZeroAddress,
+      ethers.ZeroAddress,
+      0,
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(session).submitEvidence(0, ethers.id("session evidence"));
+    await protocol.connect(session).claimKept(0);
+    expect((await protocol.getVow(0)).status).to.equal(3);
+
+    await protocol.connect(maker).createVowEx(
+      2,
+      ethers.parseEther("50"),
+      1,
+      2,
+      ethers.ZeroAddress,
+      bank.address,
+      ethers.parseEther("10"),
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(1, ethers.parseEther("50"));
+    const bankBefore = await yan.balanceOf(bank.address);
+    await protocol.connect(session).fulfillPay(1);
+    expect((await protocol.getVow(1)).status).to.equal(3);
+    expect(await yan.balanceOf(bank.address)).to.equal(bankBefore + ethers.parseEther("10"));
+  });
+
+  it("claimKept with a referee cannot fire before the referee window", async function () {
+    const { protocol, maker, guarantor, bank } = await deploy();
+    await protocol.connect(maker).createVowEx(
+      2,
+      ethers.parseEther("50"),
+      1,
+      1,
+      bank.address,
+      ethers.ZeroAddress,
+      0,
+      ST
+    );
+    await protocol.connect(guarantor).guarantee(0, ethers.parseEther("50"));
+    await protocol.connect(maker).submitEvidence(0, ethers.id("photo"));
+    await expect(protocol.connect(maker).claimKept(0)).to.be.revertedWith("Referee window");
+  });
 });

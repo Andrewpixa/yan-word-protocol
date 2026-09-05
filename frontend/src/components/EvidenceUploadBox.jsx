@@ -208,18 +208,19 @@ const styles = {
     marginBottom: 6,
   },
   title: {
-    color: '#6ee7b7',
+    color: '#eafff4',
     fontSize: 13,
     fontWeight: 600,
     letterSpacing: 0.5,
   },
   badge: {
     fontSize: 10,
-    color: '#065f46',
-    background: 'rgba(110, 231, 183, 0.35)',
+    color: '#1a1206',
+    background: '#e8d48b',
     padding: '2px 8px',
     borderRadius: 999,
     letterSpacing: 0.5,
+    fontWeight: 700,
   },
   help: {
     margin: '0 0 10px',

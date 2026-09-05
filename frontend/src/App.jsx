@@ -24,6 +24,7 @@ import {
   displayName,
   ensureAllowance,
   formatError,
+  formatEpochLen,
   formatYan,
   getRpcProvider,
   fundSessionOnLocal,
@@ -145,13 +146,14 @@ export default function App() {
     setLogState({ text: String(text || ''), tone })
   }, [])
 
-  const pushActivity = useCallback((label, hash, detail = '', actor = '') => {
+  const pushActivity = useCallback((label, hash, detail = '', actor = '', vowId = null) => {
     const item = {
       id: `${Date.now()}-${activitySeq++}`,
       label,
       hash: hash || '',
       detail,
       actor,
+      vowId,
       time: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
     }
     setActivities((prev) => [item, ...prev].slice(0, 30))
@@ -463,6 +465,7 @@ export default function App() {
           receipt.hash,
           `言约 #${vow.id}`,
           actor,
+          vow.id,
         )
       },
       { vowId: vow.id, action: 'checkIn' },
@@ -510,7 +513,7 @@ export default function App() {
         const actor = displayName(await signer.getAddress())
         const tx = await protocolContract(signer).submitEvidence(vow.id, hash)
         const receipt = await tx.wait()
-        pushActivity('提交证据', receipt.hash, shortHash(hash), actor)
+        pushActivity('提交证据', receipt.hash, shortHash(hash), actor, vow.id)
       },
       { vowId: vow.id, action: 'submitEvidence' },
     )
@@ -525,7 +528,7 @@ export default function App() {
         await ensureAllowance(signer, vow.payAmount)
         const tx = await protocolContract(signer).fulfillPay(vow.id)
         const receipt = await tx.wait()
-        pushActivity('链上还款', receipt.hash, `${formatYan(vow.payAmount)} YAN`, actor)
+        pushActivity('链上还款', receipt.hash, `${formatYan(vow.payAmount)} YAN`, actor, vow.id)
       },
       { vowId: vow.id, action: 'fulfillPay' },
     )
@@ -573,7 +576,7 @@ export default function App() {
       setSessionAddr(session.address)
       return isLocal
         ? `日签钥匙已授权：${shortAddr(session.address)}。本地已自动充 Gas，可点「日签打卡」。`
-        : `日签钥匙已授权：${shortAddr(session.address)}。测试网请给该地址转一点 MON 作 Gas（不会自动灌），再点「日签打卡」——现场可用它代替空 pulse 讲高频履约。`
+        : `日签钥匙已授权：${shortAddr(session.address)}。测试网请给该地址转一点 MON 作 Gas（不会自动灌），再点「日签打卡」——上台最多点一次，用来少弹窗。`
     })
   }
 
@@ -623,7 +626,7 @@ export default function App() {
       setLog('请先连接钱包', 'err')
       return
     }
-    await withBusy(`链上连发 ${N} 笔`, async () => {
+    await withBusy(`调试连发 ${N} 笔`, async () => {
       const signer = await getSigner()
       const actor = displayName(await signer.getAddress())
       const protocol = protocolContract(signer)
@@ -637,7 +640,7 @@ export default function App() {
           provider.getTransactionCount(from, 'pending'),
           provider.getFeeData(),
         ])
-        setLog(`链上并发提交 ${N} 笔 pulseAt…`, 'busy')
+        setLog(`调试：并发提交 ${N} 笔写入…`, 'busy')
         const overrides = {
           gasLimit: 120000n,
         }
@@ -662,7 +665,7 @@ export default function App() {
         console.warn('concurrent burst failed, falling back', concurrentErr)
         hashes = []
         for (let i = 0; i < N; i++) {
-          setLog(`链上连发 ${i + 1}/${N}…（请在钱包确认）`, 'busy')
+          setLog(`调试连发 ${i + 1}/${N}…（请在钱包确认）`, 'busy')
           const tx = await protocol.pulseAt(i)
           const receipt = await tx.wait()
           hashes.push(receipt.hash)
@@ -676,8 +679,7 @@ export default function App() {
       const last = hashes[hashes.length - 1]
       pushActivity('链上连发汇总', last, `${N} 笔 pulseAt · ${ms}ms · 均 ${avg}ms`, actor)
       return (
-        `${N} 笔 pulseAt 已确认，共 ${ms}ms（均 ${avg}ms/笔）。独立槽写入 · 确认密度体感，不是 10k TPS。` +
-        ` 口播：确认一慢，日签经济就空转——所以是 Monad。` +
+        `${N} 笔调试写入已确认，共 ${ms}ms。这不是上台项目——台上讲红边和 missSettle 分账。` +
         (first ? ` 首笔 ${txUrl(first)} · 末笔 ${txUrl(last)}` : '')
       )
     })
@@ -808,7 +810,7 @@ export default function App() {
 
   async function onOneClickDemo() {
     if (!usingDemo || !isLocal) {
-      setLog('一键演示仅本地 Hardhat + 演示模式可用。测试网请用 MetaMask 切换账户，或展开路演工具点「链上连发」。', 'err')
+      setLog('一键演示仅本地 Hardhat + 演示模式可用。测试网请用 MetaMask 切换账户，预跑食言后指红边和结算哈希。', 'err')
       return
     }
     try {
@@ -1132,9 +1134,9 @@ export default function App() {
         <div style={styles.storyLine}>没有人担保，合约不开工。</div>
         <div style={styles.storyMeta}>
           最低押金 {minStake} YAN
-          {' · '}演示一天 = {epochLen} 秒
+          {' · '}一天 = {formatEpochLen(epochLen)}
           {' · '}{networkName}
-          {' · '}确认一慢，日签经济就空转（Why Monad）
+          {' · '}日签钥匙少弹窗，便宜确认让天天打卡成立
         </div>
       </div>
 
@@ -1184,6 +1186,8 @@ export default function App() {
                     vow={vow}
                     me={myAddress}
                     epoch={world.epoch}
+                    epochLen={epochLen}
+                    activities={activities}
                     busy={actionsLocked}
                     confirmingAction={pending?.vowId === vow.id ? pending.action : null}
                     hasSession={Boolean(sessionAddr)}
@@ -1219,6 +1223,8 @@ export default function App() {
             vows={world.vows}
             me={myAddress}
             epoch={world.epoch}
+            epochLen={epochLen}
+            activities={activities}
             connected={connected}
             busy={actionsLocked}
             pending={pending}
@@ -1244,6 +1250,8 @@ export default function App() {
                     vow={vow}
                     me={myAddress}
                     epoch={world.epoch}
+                    epochLen={epochLen}
+                    activities={activities}
                     busy={actionsLocked}
                     confirmingAction={pending?.vowId === vow.id ? pending.action : null}
                     hasSession={Boolean(sessionAddr)}
@@ -1274,12 +1282,12 @@ export default function App() {
             </details>
           )}
 
-          <details style={styles.advanced} open={!isLocal}>
-            <summary style={styles.advancedSum}>路演工具 · Why Monad 现场拍</summary>
+          <details style={styles.advanced}>
+            <summary style={styles.advancedSum}>本地演示 / 调试（上台不用）</summary>
             <div style={styles.advancedBody}>
               <p style={styles.createHelp}>
-                测试网推荐：预跑食言红边讲故事 → 再点下方「链上连发」看确认密度。
-                口播：「履约要轻到能天天发生；确认一慢，日签经济就空转。」不是 10k TPS 证明。
+                测试网上台：预跑食言红边 → 点 missSettle 哈希看分账。Why Monad 最多点 1 次「日签打卡」。
+                下面连发是调试按钮，口播不要提。
               </p>
               <GuidedDemo
                 enabled={usingDemo}
@@ -1304,13 +1312,12 @@ export default function App() {
                 onClick={onChainBurst}
                 className={btnCls}
                 style={styles.pulseBtn}
-                title="连续发送 8 笔 pulseAt（独立槽）并计时——确认密度，非 TPS"
+                title="调试用，上台不要点"
               >
-                链上连发 8 笔并计时
+                调试：连发 8 笔（不上台）
               </button>
               <p style={styles.createHelp}>
-                Why Monad 现场拍：真实 `pulseAt` 写入独立槽，测确认密度（并行友好写入），不是 10k TPS。
-                口播咬死「确认一慢，日签经济就空转」。每笔上 Explorer；钱包可能仍串行弹窗。
+                连发只写调试时间戳，不是产品功能。上台讲红边和结算分账。
               </p>
             </div>
           </details>
@@ -1334,7 +1341,7 @@ export default function App() {
               先写清楚你要对什么下赌注，例如「坚持跑步7天」「坚持11点前睡觉」。这段文字会上链。
               每日报到按「签到天数」逐日签到；到期验收只在截止前完成一次。
               需要证明完成度时，选证据模式：在市场卡片上传图片，文件哈希上链，并可设**独立裁判**（裁判 ≠ 担保人）。
-              链上还款模式由合约直接验收转账。演示一天 = {epochLen} 秒。
+              链上还款模式由合约直接验收转账。一天 = {formatEpochLen(epochLen)}，当天内都可签到。
             </p>
             <div style={styles.row}>
               <label style={{ ...styles.label, minWidth: '100%' }}>
@@ -1493,7 +1500,7 @@ export default function App() {
               <summary>进阶：快进时钟／日签钥匙</summary>
               <div className="yan-more-body">
                 <p style={styles.createHelp}>
-                  日签钥匙只能代打卡。测试网授权后须给钥匙地址转 MON（不会自动灌），再点卡片「日签打卡」——适合讲「高频微履约」。
+                  日签钥匙用来代打卡、少弹窗。测试网授权后须给钥匙地址转 MON（不会自动灌），上台最多点一次「日签打卡」。
                   需要人审时用证据模式 + 独立裁判（裁判不能担保/看衰）。
                 </p>
                 {DEMO_MODE && (
@@ -1535,6 +1542,8 @@ function VowCard({
   vow,
   me,
   epoch,
+  epochLen,
+  activities,
   busy,
   confirmingAction,
   hasSession,
@@ -1682,6 +1691,8 @@ function VowCard({
         vow={vow}
         me={me}
         epoch={epoch}
+        epochLen={epochLen}
+        activities={activities}
         busy={busy}
         confirmingAction={confirmingAction}
         evidenceDraft={evidenceDraft}

@@ -1,37 +1,39 @@
 # 言 · 5 分钟演示讲稿（中 / EN）
 
-严格对齐 Monad Blitz「实机 → 如何构建 → 创新点」结构。  
-目标总时长约 **4:40**，留 20 秒缓冲。口播事实以 [BLITZ_PREP.md](BLITZ_PREP.md) 为准。
+上场先背 [PITCH_SCRIPT.md](PITCH_SCRIPT.md) 的 90 秒版。PPT：打开 [pitch/index.html](pitch/index.html)。  
+下面是 5 分钟中英对照细稿。目标总时长约 **4:40**。口播事实以 [BLITZ_PREP.md](BLITZ_PREP.md) 为准。
 
 **舞台设定（开场前 30 秒就位）**  
-浏览器已打开：预跑好的「食言」言约 + 红边图谱；「最近活动」里有可点哈希；Explorer 标签页可秒切；  
-日签钥匙已授权且钥匙地址有 MON（可点「日签打卡」）；「链上连发 8 笔」按钮可点；备灾视频在桌面。
+浏览器已打开：预跑好的「食言」言约 + 红边图谱；「最近活动」里有可点的 **missSettle** 哈希；Explorer 标签页可秒切；  
+日签钥匙已授权且钥匙地址有 MON（可点一次「日签打卡」）；备灾视频在桌面（红边 + 结算哈希，不要连发）。
 
-**结构口诀：** 断边故事 → 指链 → **现场性能拍** → 构建 / 创新 → 收尾。
+**结构口诀：** 断边故事 → **指链分账（高潮）** → 日签一次（Why Monad）→ 构建 / 创新 → 收尾。
+
+台上不要点「链上连发」。不要说独立槽、并行友好、确认密度、10k TPS。
 
 ---
 
-## 0:00–0:20｜开场：做什么 + 为何做（20 秒）
+## 0:00–0:15｜开场：做什么 + 为何做（15 秒）
 
 **中文**
 
 > 网上发誓很容易，爽约也没代价。  
 > **言** 是链上履约协议——**没有人担保，合约不开工。**  
-> 先看测试网上跑通的食言结果，再现场打一拍确认密度。
+> 先看测试网上已经走完的食言：边断了，钱分了。
 
 **English**
 
 > Online vows are cheap—breaking them costs nothing.  
 > **Yan** is an on-chain word protocol: **a vow cannot start without a guarantor.**  
-> First a finished broken vow on Monad testnet—then a live confirmation burst.
+> First a finished broken vow on Monad testnet—the edge snapped, the money moved.
 
 *动作：无操作，目光对观众 1 秒，立刻切到应用。*
 
 ---
 
-## 0:20–2:40｜实机演示（断边 + 机制 · 约 2 分 20 秒）
+## 0:15–2:50｜实机演示（断边 + 分账 · 约 2 分 35 秒）
 
-### 0:20–0:45｜场景锚定（25 秒）
+### 0:15–0:40｜场景锚定（25 秒）
 
 **中文**
 
@@ -43,11 +45,11 @@
 > This vow already finished: create → guarantee → fade → settle as **broken**.  
 > The red edge is the broken credit link.
 
-*动作：指图谱红边，不点新按钮。*
+*动作：指图谱红边，不点新按钮。图谱锁在这一条，不要切「全部言约」。*
 
 ---
 
-### 0:45–1:35｜机制四拍（50 秒 · 边指边说）
+### 0:40–1:25｜机制四拍（45 秒 · 边指边说）
 
 **中文**
 
@@ -65,68 +67,68 @@
 > **Three—fade:** others bet you'll fail.  
 > **Four—settle:** after the window, anyone can settle; on break, faders get paid and the edge snaps.
 
-*动作：依次指：言约文案 → 担保人 → 看衰列表 → 已结算状态。*
+*动作：依次指：言约文案 → 担保人 → 看衰列表 → 已结算状态。不要展开三种验收。*
 
 ---
 
-### 1:35–2:10｜谁证明（35 秒）
+### 1:25–1:55｜谁证明（30 秒）
 
 **中文**
 
 > 有人会问：打卡不是自己点的吗？  
-> **打卡可以自己点，但钱不是自己说了算。**  
-> 链不证明你跑步；链证明谁愿意为这句话付钱，以及食言时钱怎么走。  
+> **今天这条路径不靠自证发钱。**  
+> 窗口过了，任何人都能结算。打卡是动作；约束是担保押金和看衰盘。  
 > 需要人审时另设**独立裁判**——裁判不能同时担保或看衰。出皮肤 ≠ 当裁判。
 
 **English**
 
 > Isn't check-in self-clicked?  
-> **Yes—but money isn't self-declared.**  
-> The chain doesn't prove you ran; it proves who staked on the word, and how money moves on break.  
+> **This path doesn't pay out on self-declaration.**  
+> After the window, anyone can settle. Check-in is an action; the stake and fade market constrain the money.  
 > Human review → separate referee who cannot also guarantee or fade.
 
-*动作：可指「上传证据 / 裁判」入口 1–2 秒，再回图谱。*
+*动作：不要打开证据 / 裁判面板。指回红边。*
 
 ---
 
-### 2:10–2:40｜指链证明（30 秒）
+### 1:55–2:50｜高潮：红边 + Explorer 分账（55 秒）
 
 **中文**
 
 > 这不是前端动画。  
-> （点「最近活动」或收藏的 missSettle 哈希 → Explorer）  
-> 担保、看衰、结算都在 Monad 测试网上；钱已经按规则分完了。
+> （点「最近活动」里收藏的 missSettle 哈希 → Explorer）  
+> 担保、看衰、结算都在 Monad 测试网上。钱已经按规则分完了——边断了，钱动了。
 
 **English**
 
 > Not a front-end animation.  
-> *(click hash → Explorer)*  
-> Guarantee, fade, settle—real Monad testnet. Money already moved.
+> *(click the missSettle hash → Explorer)*  
+> Guarantee, fade, settle—real Monad testnet. Money already moved. The edge snapped.
 
-*动作：哈希 → Explorer；停 2 秒；回应用。*
+*动作：哈希 → Explorer；停 3 秒让人看见分账；回应用，再指一次红边。这是全场高潮，不要赶。*
 
 ---
 
-## 2:40–3:25｜现场性能拍（必做 · 约 45 秒）
+## 2:50–3:25｜Why Monad（可选日签 1 次 · 约 35 秒）
 
 **中文**
 
 > 为什么必须是 Monad？  
-> 履约要**轻到能天天发生**。若确认要等很久、打卡还要弹三次钱包——这套日签经济会空转。  
-> （点「链上连发 8 笔并计时」；或已授权日签则点 1–2 次「日签打卡」）  
-> 这是真实上链的确认密度：`pulseAt` 写独立槽，利于并行友好写入；测的是体感，**不是 10k TPS**。  
-> 慢链上，这个玩法先死——所以我们在 Monad。
+> 履约是小额、重复、当天就要确认的动作。  
+> 日签钥匙用来代打卡、少弹窗；便宜确认让天天打卡成立。  
+> （若已授权：点 **1 次**「日签打卡」，指新哈希。不要连发。）  
+> 确认要慢、每签一次都弹钱包——这个玩法先死。所以是 Monad。
 
 **English**
 
 > Why Monad?  
-> Commitments must be light enough to happen daily. Slow confirms + wallet popups kill the economy.  
-> *(hit “burst 8 txs” or session check-in)*  
-> Real on-chain density: `pulseAt` writes distinct slots—parallel-friendly, not a 10k TPS claim.  
-> On a slow chain, this product dies first—that's why Monad.
+> Commitments are small, repeated, and must confirm the same day.  
+> A session key checks in without extra wallet popups; cheap confirms make daily vows usable.  
+> *(optional: tap session check-in once, point at the hash. No burst.)*  
+> Slow confirms and a popup every day kill this product first—that's why Monad.
 
-*动作：点按钮 → 等确认 → 指活动里哈希 / 耗时文案 → 可点一笔进 Explorer。*  
-*若钱包卡死：立刻切备灾视频里预录的连发片段，口播不中断。*
+*动作：最多点一次日签打卡。若钥匙没就绪，只靠口播 + 已有结算哈希，不要现场现授权。*  
+*若钱包卡死：立刻切备灾视频里的红边 + 结算哈希，口播不中断。*
 
 ---
 
@@ -135,15 +137,15 @@
 **中文**
 
 > 我们怎么建的——三句话。  
-> **合约：** YanToken + WordProtocol；三种验收——每日报到、证据哈希、链上还款。  
-> **Monad：** 日签钥匙只能代打卡；连发用 `pulseAt` 独立槽测确认密度——去掉便宜确认，日签玩法不成立。  
-> **最有意思的挑战：** 强制「信用边先上链」——没有担保边，看衰盘不存在。自助打卡很轻，经济裁决很重。
+> **合约：** YanToken + WordProtocol；台上这条是每日报到 + 超时结算。  
+> **Monad：** 日签钥匙用来代打卡、少弹窗——去掉便宜确认，日签玩法不成立。  
+> **最有意思的挑战：** 强制「信用边先上链」——没有担保边，看衰盘不存在。
 
 **English**
 
 > How we built it—three lines.  
-> **Contracts:** YanToken + WordProtocol; check-in / evidence / on-chain pay.  
-> **Monad:** session key for check-ins; `pulseAt` burst for confirmation density—without cheap confirms, daily vows don't work.  
+> **Contracts:** YanToken + WordProtocol; today you saw daily check-in and timeout settle.  
+> **Monad:** session key for check-ins, fewer popups—without cheap confirms, daily vows don't work.  
 > **The hard part:** credit edges first. No guarantor edge, no fade market.
 
 ---
@@ -172,11 +174,11 @@
 
 **中文**
 
-> 言，Monad 测试网已上线。谢谢——欢迎拆合约、拆图谱、拆连发哈希。
+> 言，Monad 测试网已上线。谢谢——欢迎拆合约、拆图谱、拆这笔结算。
 
 **English**
 
-> Yan—live on Monad testnet. Thanks—happy to dig into contracts, graph, or burst txs.
+> Yan—live on Monad testnet. Thanks—happy to dig into contracts, the graph, or this settle tx.
 
 *动作：停。不追加功能列表。*
 
@@ -194,7 +196,7 @@
 
 > Network's flaky—switching to a pre-recorded clip of the same testnet path.
 
-然后从「机制四拍」或「性能拍」旁白接回。
+然后从「机制四拍」或「Explorer 分账」旁白接回。不要切连发片段。
 
 ---
 
@@ -202,9 +204,10 @@
 
 | 不要说 | 改说 |
 |---|---|
-| 担保人可以判定食言 / `attestBroken` | 超时任何人可结算；证据模式另设裁判 |
-| 我们证明了 10k TPS / 已验证并行执行 | 慢确认则日签空转；`pulseAt` 测确认密度 / 并行友好写入 |
-| 担保人可验证未完成 | 担保人出皮肤；验证靠证据+裁判或客观转账 |
+| 担保人可以判定食言 / `attestBroken` | 超时任何人可结算；需要人审另设裁判 |
+| 我们证明了 10k TPS / 已验证并行执行 / 独立槽 / 并行友好 / 确认密度 | 日签钥匙少弹窗；便宜确认让天天打卡成立 |
+| 日签钥匙只能打卡 | 日签钥匙用来代打卡、少弹窗 |
+| 担保人可验证未完成 | 担保人出皮肤；钱按窗口和看衰盘走 |
 | 我们有完整代币经济 / 已审计上线 | Blitz 可演示原型；demo 时钟仅 owner |
 
 ---
@@ -213,7 +216,7 @@
 
 | 遍数 | 目标 |
 |---|---|
-| 第 1–2 遍 | 走通，含一次真实连发或日签 |
+| 第 1–2 遍 | 走通：红边 → missSettle 哈希 → Explorer；可选日签 1 次 |
 | 第 3–4 遍 | 卡在 **4:30–4:50** |
-| 第 5 遍 | 故意断网，练备灾切换 |
-| 单独加练 | one-liner；「打卡可以自己点，但钱不是自己说了算」；「慢了，日签经济会空转」 |
+| 第 5 遍 | 故意断网，练备灾切换（红边 + 结算，不要连发） |
+| 单独加练 | one-liner；「边断了，钱分了」；「日签钥匙少弹窗，便宜确认让天天打卡成立」 |

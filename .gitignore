@@ -34,3 +34,6 @@ npm-debug.log*
 # Mojo agent secret (never commit)
 .mojo_agent_secret
 .env.production
+
+# local Mojo screenshots
+yan-*.png

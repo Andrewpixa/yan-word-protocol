@@ -5,9 +5,9 @@ const hre = require("hardhat");
 async function main() {
   const [deployer, a, b, c, d] = await hre.ethers.getSigners();
 
-  // Blitz 默认：短轮次 + 可快进。正式长周期可设 EPOCH_SECONDS=86400 DEMO_MODE=false
+  // 一天一轮：当天内都可签到。演示可用 demoWarp 快进。
   const demoMode = process.env.DEMO_MODE !== "false";
-  const epochSeconds = Number(process.env.EPOCH_SECONDS || 60);
+  const epochSeconds = Number(process.env.EPOCH_SECONDS || 86400);
 
   console.log("Deployer:", deployer.address);
   console.log("Network:", hre.network.name, "demoMode:", demoMode, "epoch:", epochSeconds);
@@ -109,7 +109,7 @@ async function main() {
           "VITE_YAN_ADDRESS=",
           "VITE_PROTOCOL_ADDRESS=",
           "VITE_DEMO_MODE=true",
-          "VITE_EPOCH_SECONDS=60",
+          "VITE_EPOCH_SECONDS=86400",
           "",
         ].join("\n");
     fs.writeFileSync(
